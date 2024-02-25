@@ -22,17 +22,54 @@ def classify_words(text):
     # 对字符串文本进行分词和找原型
     # 加载pymorphy2的俄语处理器
     morph = pymorphy2.MorphAnalyzer()
-    words_sentence = re.findall(r'\b\w+\b', text)  # 表示的是句子拆分后的词
+
+    # 拆分句子为词
+    russian_text = re.sub(r'[^\u0400-\u04FF]+', ' ', text)
+    words_sentence = re.findall(r'\b\w+\b', russian_text)
+    # print(russian_words)
+    # words_sentence = re.findall(r'\b\w+\b', text)  # 表示的是句子拆分后的词
+    print("word:",words_sentence)
     words_origins = []
+
+    # 此处开始规则化
+    russian_alphabet = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'
+    russian_alphabet = list(russian_alphabet)
+    print("here",russian_alphabet)
+    rules_mid = ['в','но', 'что','и','какой', 'как','ребят','быстро','по','а','с','из','есть','к','за',
+                 'я','другой', 'потому', 'самый',
+                 'спасибо', 'идти', 'быть', 'только', 'раз',
+                 'когда', 'проходить', 'пройти', 'лет', 'красный', 'люди', 'песня',
+                 'мой', 'сказать', 'каждый', 'хорошо', 'утро', 'свой', 'легко', 'больше', 'весело', 'город',
+                 'год', 'Москва', 'вернуться', 'река', 'парк', 'здесь', 'с', 'родители', 'вечер',
+                 'когда', 'газета', 'участвовать', 'сделать', 'директор' ]
+    rules_high = []
+    rules_pro4 = []
+    rules_pro8 = []
+
+
     for word in words_sentence:
+        #规则化
         parsed_word = morph.parse(word)
         if parsed_word:
-            words_origins.append(parsed_word[0].normal_form)
+            normal_form = parsed_word[0].normal_form
+            if normal_form in russian_alphabet or word in russian_alphabet:
+                mid_list.append(word)
+            if normal_form in rules_mid or word in rules_mid:
+                mid_list.append(word)
+            if normal_form in rules_high or word in rules_high:
+                high_list.append(word)
+            if normal_form in rules_pro4 or word in rules_pro4:
+                pro4_list.append(word)
+            if normal_form in rules_pro8 or word in rules_pro8:
+                pro8_list.append(word)
+            else:
+                words_origins.append(parsed_word[0].normal_form)
             # print(f"Word: {word}, Lemma: {parsed_word[0].normal_form}")
     # 对文本单词进行编码,用的transform,训练用fit_transform
     X = vectorizer.transform(words_origins)
     # 对文本单词进行分类
     y_pred = classifier.predict(X)
+
     # 根据分类结果，组合返回的四个词汇列表
     for i, pred_labels in enumerate(y_pred):
         if pred_labels[0] == 1:
@@ -46,7 +83,6 @@ def classify_words(text):
         # 当pre_labels为[0,0,0,0]时，归类到专八词语
         if all(label == 0 for label in pred_labels):
             pro8_list.append(words_sentence[i])
-
     all_pro8_words = set(pro8_list + pro4_list + high_list + mid_list)
     all_pro4_words = set(pro4_list + high_list + mid_list)
     all_high_words = set(high_list + mid_list)
@@ -59,7 +95,6 @@ def classify_words(text):
 
     # 高中词汇
     high_list = list(all_high_words)
-
 
     out_mid_list = list(set(pro4_list + pro8_list + high_list) - set(mid_list))
     out_high_list = list(set(pro4_list + pro8_list + mid_list) - set(high_list))
@@ -74,11 +109,10 @@ def classify_words(text):
     pro4_list_len = len(pro4_list)
     pro8_list_len = len(pro8_list)
 
-
     return {"mid_list": mid_list, "high_list": high_list, "pro4_list": pro4_list, "pro8_list": pro8_list,
             "out_mid_list": out_mid_list, "out_high_list": out_high_list, "out_pro4_list": out_pro4_list,
-            "out_pro8_list": out_pro8_list,"mid_list_len":mid_list_len,"high_list_len":high_list_len,
-            "pro4_list_len":pro4_list_len,"pro8_list_len":pro8_list_len
+            "out_pro8_list": out_pro8_list, "mid_list_len": mid_list_len, "high_list_len": high_list_len,
+            "pro4_list_len": pro4_list_len, "pro8_list_len": pro8_list_len
             }
 
 
@@ -101,4 +135,5 @@ def index():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, threaded=True)
+    # app.run(host='0.0.0.0', port=5000, threaded=True)
+    app.run(host='0.0.0.0', port=5000)
